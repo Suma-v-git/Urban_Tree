@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  urban-tree-segmentation:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: urban-tree-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../checkpoints:/app/checkpoints
+      - ../inference_results:/app/inference_results
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a database for storing results
+  postgres:
+    image: postgres:13
+    container_name: urban-tree-db
+    environment:
+      POSTGRES_DB: urban_tree_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:6-alpine
+    container_name: urban-tree-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
